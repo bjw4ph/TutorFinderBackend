@@ -1,10 +1,11 @@
 var express = require('express')
 var app = express()
 var mongoose = require('mongoose');
-var database = require('./config/database');
+var database = require('./config/database.js');
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
 
+mongoose.Promise = global.Promise;
 mongoose.connect(database.url);
 app.use(bodyParser.urlencoded({'extended':'true'})); 			// parse application/x-www-form-urlencoded
 app.use(bodyParser.json()); 									// parse application/json
@@ -27,6 +28,7 @@ app.post('/addUser', function(req,res){
 		'major' : req.body.major,
 		'paymentRate' : req.body.paymentRate,
 		'tutorRating' : req.body.tutorRating,
+		'ratingsCount' : req.body.ratingsCount,
 		'tutorActive' : req.body.tutorActive,
 		'tutorLocationDescription' : req.body.tutorLocationDescription,
 		'tutorLocationGPS' : req.body.tutorLocationGPS
@@ -62,29 +64,44 @@ app.post('/addLocation', function(req, res){
 })
 
 app.post('/addRating', function(req, res){
-	var reviewedRating = req.body.revieweeID
+	console.log("Started");
 	var RatingObj = {
 		'reviewerID' : req.body.reviewerID,
 		'revieweeID' : req.body.revieweeID,
 		'rating' : req.body.rating,
 		'description' : req.body.description
 	}
-	var newRating = new Rating(RatingObj);
-	var newRatingId
+	console.log("RatingObj:");
+	console.log(RatingObj);
+	var newRating = new Review(RatingObj);
 	newRating.save(function(error, title){
 		if(error){
 			console.log("Error " + error);
 		} else {
 			console.log(title);
-			User.findOne({'_id': title._id}, function(error, doc){
+			var reviewedRating = title.rating;
+			User.findOne({'_id': title.revieweeID}, function(error, doc){
+				if(error || !doc){
+					res.json({message: "Unable to update the user rating"});
+				} else {
 				//Update the ratings for the User
 				var oldRating = parseInt(doc.tutorRating, 10);
+				console.log("Old Rating: " + oldRating);
 				var oldRatingCount = parseInt(doc.ratingsCount, 10);
+				console.log("Old Rating Count: " + oldRatingCount);
 				var newRatingCount = oldRatingCount + 1;
-				var newRating = (oldRating*oldRatingCount + reviewedRating)/newRatingCount;
-				doc.tutorRating = newRating.toString();
-				doc.ratingsCount = newRatingCount;
-				doc.save();	
+				console.log(oldRating + "*" + oldRatingCount + " + " + reviewedRating + ")/" + newRatingCount);
+				var ratingSum = oldRating*oldRatingCount
+				console.log("ratingSum: " + ratingSum);
+				var newRatingTotal = ratingSum + parseInt(reviewedRating,10);
+				console.log("newRatingTotal: " + newRatingTotal);
+				var newRating = newRatingTotal/newRatingCount;
+				//var newRating = ((oldRating*oldRatingCount)+reviewedRating)/(newRatingCount);
+				console.log("newRating: " + newRating);
+				doc.tutorRating = newRating;
+				doc.ratingsCount = newRatingCount.toString();
+				doc.save();
+				}	
 			})
 
 
@@ -93,7 +110,10 @@ app.post('/addRating', function(req, res){
 	res.json({message: "You added a rating"})
 })
 
-app.get()
+app.get('/getDepartments', function(req,res){
+	
+
+})
 
 app.listen(6565);
 console.log("App listening on port 6565");
