@@ -1,12 +1,12 @@
 var express = require('express')
 var app = express()
 var mongoose = require('mongoose');
-//var database = require('./config/database.js');
+var database = require('./config/database.js');
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
-
+//Checking for updates from SSH
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost/tuber');
+mongoose.connect(database.url);
 app.use(bodyParser.urlencoded({'extended':'true'})); 			// parse application/x-www-form-urlencoded
 app.use(bodyParser.json()); 									// parse application/json
 app.use(bodyParser.json({ type: 'application/vnd.api+json' })); // parse application/vnd.api+json as json
